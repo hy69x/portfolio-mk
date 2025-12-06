@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 
-const YOUTUBE_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY || "AIzaSyD19Vz8uy7gyrDvSkZKi_zALq5l_OSoPrM";
+const YOUTUBE_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
 // TODO: Move key to .env.local
 
 export interface YouTubeChannelStats {
