@@ -29,9 +29,16 @@ export default function VideoCarousel({ videos }: VideoCarouselProps) {
 
     const scroll = (direction: "left" | "right") => {
         if (scrollRef.current) {
-            const { clientWidth } = scrollRef.current;
-            const scrollAmount = clientWidth * 0.8;
-            scrollRef.current.scrollBy({
+            // Calculate scroll amount based on card width + gap
+            // Card width is 300px (mobile) or 350px (desktop) + 24px gap (gap-6)
+            // But best to measure the first child dynamically
+            const container = scrollRef.current;
+            const linkTag = container.querySelector('a'); // Our cards are <a> tags
+            const cardWidth = linkTag ? linkTag.clientWidth : 350; // Fallback
+            const gap = 24; // gap-6
+            const scrollAmount = cardWidth + gap;
+
+            container.scrollBy({
                 left: direction === "left" ? -scrollAmount : scrollAmount,
                 behavior: "smooth",
             });

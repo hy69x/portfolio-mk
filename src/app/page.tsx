@@ -29,6 +29,24 @@ export default function Home() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [scholarData, setScholarData] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedYear, setSelectedYear] = useState<string>("All");
+
+  const publicationsSource = scholarData ? scholarData.publications : publications;
+
+  // Get unique years for filter dropdown
+  const uniqueYears = Array.from(new Set(publicationsSource.map((p: any) => p.year.toString()))).sort().reverse();
+
+  const filteredPublications = publicationsSource.filter((pub: any) => {
+    const matchesSearch =
+      pub.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pub.authors.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      pub.journal.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesYear = selectedYear === "All" || pub.year.toString() === selectedYear;
+
+    return matchesSearch && matchesYear;
+  });
 
   useEffect(() => {
     fetch('http://localhost:3001/scholar')
@@ -114,7 +132,7 @@ export default function Home() {
 
         {/* About Section */}
         <section id="about" className="py-20">
-          <div className="grid gap-12 md:grid-cols-2">
+          <div className="grid gap-12 md:grid-cols-2 items-start">
             <div className="space-y-6">
               <h2 className="flex items-center gap-3 font-display text-3xl text-white">
                 <span className="h-px w-8 bg-gold"></span>
@@ -189,7 +207,7 @@ export default function Home() {
               </Modal>
 
             </div>
-            <div className="bg-surface glass rounded-3xl p-8">
+            <div className="bg-surface glass rounded-3xl p-8 sticky top-32">
               <h3 className="mb-6 text-xl font-semibold text-white">Distinguished Fellowships</h3>
               <ul className="space-y-4">
                 {achievements.slice(0, 4).map((item, i) => (
@@ -295,9 +313,38 @@ export default function Home() {
               </div>
 
               <Modal isOpen={activeModal === 'publications'} onClose={closeModal} title="Complete List of Publications">
+
+                {/* Search and Filter Controls */}
+                <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-md pb-4 pt-2 -mt-2 mb-6 border-b border-white/10 space-y-4 md:space-y-0 md:flex md:gap-4">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search publications..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full rounded-lg bg-surface/50 border border-white/10 px-4 py-2.5 pl-10 text-white placeholder-slate-500 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition"
+                    />
+                    <svg className="absolute left-3 top-3 h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="w-full md:w-40 rounded-lg bg-surface/50 border border-white/10 px-4 py-2.5 text-slate-300 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition appearance-none cursor-pointer"
+                  >
+                    <option value="All">All Years</option>
+                    {filteredPublications.length === 0 && selectedYear !== "All" && <option value={selectedYear}>{selectedYear}</option>}
+                    {uniqueYears.map((year: any) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="space-y-8">
-                  {scholarData ? (
-                    scholarData.publications.map((pub: any, i: number) => (
+                  {filteredPublications.length > 0 ? (
+                    filteredPublications.map((pub: any, i: number) => (
                       <div key={i} className="border-b border-white/5 pb-6 last:border-0">
                         <div className="flex justify-between items-start mb-2">
                           <span className="text-gold font-mono text-sm">{pub.year}</span>
@@ -311,17 +358,9 @@ export default function Home() {
                       </div>
                     ))
                   ) : (
-                    publications.map((pub, i) => (
-                      <div key={i} className="border-b border-white/5 pb-6 last:border-0">
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-gold font-mono text-sm">{pub.year}</span>
-                          <span className="text-xs bg-teal-900/40 text-teal-400 px-2 py-1 rounded">IF: {pub.impactFactor}</span>
-                        </div>
-                        <h4 className="text-lg font-medium text-white mb-2">{pub.title}</h4>
-                        <p className="text-slate-400 text-sm mb-1 italic">{pub.journal}</p>
-                        <p className="text-slate-500 text-xs">{pub.authors}</p>
-                      </div>
-                    ))
+                    <div className="py-12 text-center text-slate-500">
+                      No publications found matching your search.
+                    </div>
                   )}
                 </div>
               </Modal>
