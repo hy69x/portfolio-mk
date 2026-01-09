@@ -31,6 +31,7 @@ export default function Home() {
   const [scholarData, setScholarData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedYear, setSelectedYear] = useState<string>("All");
+  const [sortBy, setSortBy] = useState<string>("year-desc");
 
   const publicationsSource = scholarData ? scholarData.publications : publications;
 
@@ -46,6 +47,12 @@ export default function Home() {
     const matchesYear = selectedYear === "All" || pub.year.toString() === selectedYear;
 
     return matchesSearch && matchesYear;
+  }).sort((a: any, b: any) => {
+    if (sortBy === 'year-desc') return parseInt(b.year) - parseInt(a.year);
+    if (sortBy === 'year-asc') return parseInt(a.year) - parseInt(b.year);
+    if (sortBy === 'citations-desc') return (b.citations || 0) - (a.citations || 0);
+    if (sortBy === 'citations-asc') return (a.citations || 0) - (b.citations || 0);
+    return 0;
   });
 
   useEffect(() => {
@@ -332,13 +339,24 @@ export default function Home() {
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    className="w-full md:w-40 rounded-lg bg-surface/50 border border-white/10 px-4 py-2.5 text-slate-300 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition appearance-none cursor-pointer"
+                    className="w-full md:w-32 rounded-lg bg-surface/50 border border-white/10 px-4 py-2.5 text-slate-300 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition appearance-none cursor-pointer"
                   >
                     <option value="All">All Years</option>
                     {filteredPublications.length === 0 && selectedYear !== "All" && <option value={selectedYear}>{selectedYear}</option>}
                     {uniqueYears.map((year: any) => (
                       <option key={year} value={year}>{year}</option>
                     ))}
+                  </select>
+
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full md:w-48 rounded-lg bg-surface/50 border border-white/10 px-4 py-2.5 text-slate-300 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 transition appearance-none cursor-pointer"
+                  >
+                    <option value="year-desc">Year (Newest)</option>
+                    <option value="year-asc">Year (Oldest)</option>
+                    <option value="citations-desc">Citations (High to Low)</option>
+                    <option value="citations-asc">Citations (Low to High)</option>
                   </select>
                 </div>
 
