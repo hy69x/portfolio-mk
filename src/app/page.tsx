@@ -150,7 +150,7 @@ export default function Home() {
               </p>
 
               {/* Scholar Stats Section */}
-              {scholarData && (
+              {scholarData && scholarData.stats && (
                 <div className="grid grid-cols-3 gap-4 py-6">
                   <div className="text-center p-4 bg-surface/50 rounded-2xl ring-1 ring-white/5">
                     <div className="text-3xl font-bold text-gold">{scholarData.stats.citations.all}</div>
