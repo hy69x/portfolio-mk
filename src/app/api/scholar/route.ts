@@ -29,91 +29,69 @@ interface Publication {
     link?: string;
 }
 
+const SERPAPI_KEY = process.env.SERPAPI_KEY;
+
 export async function GET() {
     try {
-        const { data } = await axios.get(SCHOLAR_URL, {
-            headers: {
-                'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            },
-        });
-
-        const $ = cheerio.load(data);
-
-        // 1. Scrape Stats (Citations, h-index, i10-index)
-        const stats: ScholarStats = {
-            citations: { all: 0, since2018: 0 },
-            h_index: { all: 0, since2018: 0 },
-            i10_index: { all: 0, since2018: 0 },
-        };
-
-        const statsTable = $('#gsc_rsb_st');
-        if (statsTable.length) {
-            const rows = statsTable.find('tbody tr');
-
-            // Helper to safely parse numbers
-            const parseNum = (val: string) => parseInt(val.replace(/,/g, ''), 10) || 0;
-
-            // Row 0: Citations
-            const citRow = $(rows[0]).find('.gsc_rsb_std');
-            if (citRow.length >= 2) {
-                stats.citations.all = parseNum($(citRow[0]).text());
-                stats.citations.since2018 = parseNum($(citRow[1]).text());
-            }
-
-            // Row 1: h-index
-            const hRow = $(rows[1]).find('.gsc_rsb_std');
-            if (hRow.length >= 2) {
-                stats.h_index.all = parseNum($(hRow[0]).text());
-                stats.h_index.since2018 = parseNum($(hRow[1]).text());
-            }
-
-            // Row 2: i10-index
-            const i10Row = $(rows[2]).find('.gsc_rsb_std');
-            if (i10Row.length >= 2) {
-                stats.i10_index.all = parseNum($(i10Row[0]).text());
-                stats.i10_index.since2018 = parseNum($(i10Row[1]).text());
-            }
+        if (!SERPAPI_KEY) {
+            console.error('Missing SERPAPI_KEY');
+            // Fallback if key is missing
+            return NextResponse.json({ stats: null, publications: null, error: 'Configuration Error' }, { status: 200 });
         }
 
-        // 2. Scrape Recent Publications
-        const publications: Publication[] = [];
-        const pubRows = $('#gsc_a_b .gsc_a_tr');
-
-        pubRows.slice(0, 100).each((_, element) => {
-            const titleEl = $(element).find('.gsc_a_t a');
-            const title = titleEl.text();
-            const link = `https://scholar.google.com${titleEl.attr('href')}`;
-
-            const authors = $(element).find('.gsc_a_t .gs_gray').first().text();
-            const journal = $(element).find('.gsc_a_t .gs_gray').last().text();
-
-            const citations = $(element).find('.gsc_a_c .gsc_a_ac').text();
-            const year = $(element).find('.gsc_a_y .gsc_a_h').text();
-
-            if (title) {
-                publications.push({
-                    title,
-                    authors,
-                    journal,
-                    year,
-                    citations,
-                    link
-                });
+        const response = await axios.get('https://serpapi.com/search.json', {
+            params: {
+                engine: 'google_scholar_author',
+                author_id: SCHOLAR_ID,
+                api_key: SERPAPI_KEY,
+                hl: 'en'
             }
         });
+
+        const data = response.data;
+
+        // 1. Process Stats
+        // SerpApi returns a table array: [ { all: X, since_2018: Y }, ... ]
+        // Index 0: Citations, 1: h-index, 2: i10-index
+        const table = data.cited_by?.table || [];
+        const stats: ScholarStats = {
+            citations: {
+                all: table[0]?.all || 0,
+                since2018: table[0]?.since_2018 || 0
+            },
+            h_index: {
+                all: table[1]?.all || 0,
+                since2018: table[1]?.since_2018 || 0
+            },
+            i10_index: {
+                all: table[2]?.all || 0,
+                since2018: table[2]?.since_2018 || 0
+            },
+        };
+
+        // 2. Process Publications
+        const publications: Publication[] = (data.articles || []).map((article: any) => ({
+            title: article.title,
+            authors: article.authors,
+            journal: article.publication,
+            year: article.year || 'N/A',
+            citations: article.cited_by?.value?.toString() || '0',
+            link: article.link
+        }));
 
         return NextResponse.json(
             { stats, publications },
             {
                 headers: {
+                    // Cache for 12 hours (43200s), allow stale for 24h
                     'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400',
                 },
             }
         );
 
     } catch (error) {
-        console.error('Error fetching Scholar data:', error);
-        return NextResponse.json({ error: 'Failed to fetch Google Scholar data' }, { status: 500 });
+        console.error('Error fetching SerpApi data:', error);
+        // Fail gracefully so frontend uses fallback
+        return NextResponse.json({ stats: null, publications: null, error: 'API Error' }, { status: 200 });
     }
 }
