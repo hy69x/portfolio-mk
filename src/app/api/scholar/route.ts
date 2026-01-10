@@ -103,7 +103,14 @@ export async function GET() {
             }
         });
 
-        return NextResponse.json({ stats, publications });
+        return NextResponse.json(
+            { stats, publications },
+            {
+                headers: {
+                    'Cache-Control': 'public, s-maxage=43200, stale-while-revalidate=86400',
+                },
+            }
+        );
 
     } catch (error) {
         console.error('Error fetching Scholar data:', error);
