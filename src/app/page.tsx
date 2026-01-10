@@ -316,7 +316,7 @@ export default function Home() {
               )}
 
               <div className="mt-8 text-center bg-surface/50 rounded-xl p-4 cursor-pointer hover:bg-surface transition" onClick={() => setActiveModal('publications')}>
-                <span className="text-sm font-medium text-slate-300 ">View Full Publication List ({scholarData ? scholarData.publications.length : publications.length}+ items) →</span>
+                <span className="text-sm font-medium text-slate-300 ">View Full Publication List ({(scholarData && scholarData.publications) ? scholarData.publications.length : publications.length}+ items) →</span>
               </div>
 
               <Modal isOpen={activeModal === 'publications'} onClose={closeModal} title="Complete List of Publications">
