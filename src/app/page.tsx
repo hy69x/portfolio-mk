@@ -56,7 +56,7 @@ export default function Home() {
   });
 
   useEffect(() => {
-    fetch('http://localhost:3001/scholar')
+    fetch('/api/scholar')
       .then(res => res.json())
       .then(data => setScholarData(data))
       .catch(err => console.error('Failed to load scholar data', err));
