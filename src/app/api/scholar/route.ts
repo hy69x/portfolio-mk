@@ -44,7 +44,8 @@ export async function GET() {
                 engine: 'google_scholar_author',
                 author_id: SCHOLAR_ID,
                 api_key: SERPAPI_KEY,
-                hl: 'en'
+                hl: 'en',
+                num: 100 // Fetch up to 100 publications (replaces previous pagesize=100)
             }
         });
 
